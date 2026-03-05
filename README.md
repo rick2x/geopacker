@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.1.3-blue)
+![Version](https://img.shields.io/badge/version-1.1.4-blue)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
 
