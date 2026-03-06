@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QTextDocument
 from qgis.PyQt.QtPrintSupport import QPrinter
 
 class GeopackerLogic:
-    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, group_gpkgs=False, progress_bar=None, status_label=None):
+    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
         self.output_file = output_file
         self.strip_duplicates = strip_duplicates
         self.strip_empty = strip_empty
@@ -26,16 +26,25 @@ class GeopackerLogic:
         self.group_gpkgs = group_gpkgs
         self.progress_bar = progress_bar
         self.status_label = status_label
-        self.project = QgsProject.instance()
+        self.project = project if project is not None else QgsProject.instance()
+        self.feedback = feedback
 
     def update_status(self, message, progress=None):
+        if self.feedback:
+            self.feedback.pushInfo(message)
+            if progress is not None:
+                self.feedback.setProgress(progress)
+                
         if self.status_label:
             self.status_label.setText(message)
         if self.progress_bar and progress is not None:
             self.progress_bar.setValue(progress)
         QgsMessageLog.logMessage(message, "Geopacker", Qgis.Info)
+        
         # Keep UI responsive during long operations
-        QCoreApplication.processEvents()
+        app = QCoreApplication.instance()
+        if app:
+            app.processEvents()
 
     def is_layer_empty_temp(self, layer):
         if not layer.isValid():

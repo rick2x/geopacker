@@ -5,8 +5,10 @@ import sys
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.core import QgsApplication
 
 from .geopacker_dialog import GeopackerDialog
+from .geopacker_provider import GeopackerProvider
 
 class Geopacker:
     """QGIS Plugin Implementation."""
@@ -22,6 +24,11 @@ class Geopacker:
         self.toolbar = self.iface.addToolBar(u'Geopacker')
         self.toolbar.setObjectName(u'Geopacker')
         self.dlg = None
+        self.provider = None
+
+    def initProcessing(self):
+        self.provider = GeopackerProvider()
+        QgsApplication.processingRegistry().addProvider(self.provider)
 
     def add_action(self, icon_path, text, callback, enabled_flag=True,
                    add_to_menu=True, add_to_toolbar=True, status_tip=None,
@@ -49,6 +56,7 @@ class Geopacker:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
+        self.initProcessing()
         icon_path = os.path.join(self.plugin_dir, 'icon.png')
         self.add_action(
             icon_path,
@@ -58,6 +66,9 @@ class Geopacker:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
+        if self.provider:
+            QgsApplication.processingRegistry().removeProvider(self.provider)
+            
         for action in self.actions:
             self.iface.removePluginMenu(u'&Geopacker', action)
             self.iface.removeToolBarIcon(action)
