@@ -62,6 +62,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="chkOnlySelected">
+     <property name="text">
+      <string>Only export selected features (if any are selected)</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QCheckBox" name="chkGroupGpkgs">
      <property name="text">
       <string>Separate GeoPackages by Layer Group</string>

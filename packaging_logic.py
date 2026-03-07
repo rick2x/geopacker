@@ -18,11 +18,12 @@ from qgis.PyQt.QtGui import QTextDocument
 from qgis.PyQt.QtPrintSupport import QPrinter
 
 class GeopackerLogic:
-    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
+    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, only_selected=False, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
         self.output_file = output_file
         self.strip_duplicates = strip_duplicates
         self.strip_empty = strip_empty
         self.skip_remote = skip_remote
+        self.only_selected = only_selected
         self.group_gpkgs = group_gpkgs
         self.progress_bar = progress_bar
         self.status_label = status_label
@@ -140,6 +141,9 @@ class GeopackerLogic:
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
                     options.driverName = "GPKG"
+                    
+                    if self.only_selected and layer.selectedFeatureCount() > 0:
+                        options.onlySelectedFeatures = True
                     
                     base_safe_name = "".join([c if c.isalnum() else "_" for c in layer.name()])
                     if not base_safe_name:

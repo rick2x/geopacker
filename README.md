@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.1-blue)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
 
@@ -37,6 +37,7 @@ Sharing QGIS projects often results in broken file paths because standard tools 
 - **Smart Path Remapping**: Behind the scenes, the plugin unzips a copy of your `.qgz` project, parses the underlying XML, and updates all layer and media data sources to point to the new relatively-pathed items.
 - **Dynamic ZIP Naming**: The QGIS project file securely nested inside the ZIP archive takes on the same matching name as your exported zip file (e.g., `MyProject.zip` will contain `MyProject.qgz`).
 - **Smart Trimming**: Optional checkboxes to strip out empty memory layers and duplicate layer sources to keep your packaged file size down.
+- **Selected Features Only**: New granular control allows you to export *only* the specific highlighted/selected features of your vector layers, while still correctly exporting all other layers in full.
 - **Remote Layer Protection**: Automatically detects remote vectors (e.g. WFS/Online) and securely skips downloading them while retaining their dynamic online links in the final project.
 - **Graceful Error Handling**: Actively protects you by deleting partial ZIP exports if an unrecoverable system error occurs mid-process, ensuring no corrupt maps are sent.
 - **Error Reporting**: Informs you of exactly which layers were skipped or failed to export.
@@ -79,6 +80,9 @@ qgis_process run geopacker:package_project --INPUT="C:/maps/my_map.qgz" --OUTPUT
 - **Recommended:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing. Install via `pip install defusedxml` in the QGIS Python console.
 
 ## Changelog
+
+### 1.2.1
+- **Export Selected Features**: Added a new checkbox option (`Only export selected features if any are selected`). When extracting vector layers, Geopacker will now smartly check if the layer has an active selection and selectively export only those geometries, leaving unselected layers to export their full datasets normally.
 
 ### 1.2.0
 - **Headless QGIS Execution & Processing Toolbox Integration**: Completely decoupled packaging logic from the Qt GUI, registering Geopacker as a native QGIS Processing Provider. It can now be chained in the Graphical Modeler or run headless via the `qgis_process` CLI.
