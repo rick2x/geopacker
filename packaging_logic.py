@@ -291,8 +291,17 @@ class GeopackerLogic:
 
             self.update_status("Saving project copy...", 70)
             
+            # Cache original project state to avoid changing the active project's path
+            original_file_name = self.project.fileName()
+            original_is_dirty = self.project.isDirty()
+            
             temp_qgz_path = os.path.join(temp_dir, "project.qgz")
             self.project.write(temp_qgz_path)
+            
+            # Restore original project state
+            self.project.setFileName(original_file_name)
+            if original_is_dirty:
+                self.project.setDirty(True)
             
             self.update_status("Remapping project paths...", 75)
             
