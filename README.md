@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue)
+![Version](https://img.shields.io/badge/version-1.3-blue)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
 
@@ -80,8 +80,11 @@ qgis_process run geopacker:package_project --INPUT="C:/maps/my_map.qgz" --OUTPUT
 - **Recommended:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing. Install via `pip install defusedxml` in the QGIS Python console.
 
 ## Changelog
-
-### 1.2.2
+ 
+ ### 1.3
+- **QGIS 4.0 Compatibility**: Added official support for QGIS 4.0 and updated plugin metadata for better cross-version compatibility.
+ 
+ ### 1.2.2
 - **Bug Fix**: Fixed an issue where the active QGIS project's file path would be temporarily changed to the internal packaging directory, causing subsequent saves to fail or target a deleted folder.
 
 ### 1.2.1
