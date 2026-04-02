@@ -220,11 +220,12 @@ class GeopackerLogic:
 
     def _get_layer_group_path(self, layer, separator="-"):
         group_path = ""
-        node = self.project.layerTreeRoot().findLayer(layer.id())
+        tree_root = self.project.layerTreeRoot()
+        node = tree_root.findLayer(layer.id())
         if node:
             parent = node.parent()
             groups = []
-            while parent and parent != self.project.layerTreeRoot():
+            while parent and parent != tree_root:
                 gname = "".join([c if c.isalnum() or c in (' ', '-', '_') else "_" for c in parent.name()]).strip()
                 if gname:
                     groups.insert(0, gname)
@@ -470,10 +471,11 @@ class GeopackerLogic:
             qgz_extract_dir = os.path.join(temp_dir, "qgz_unpacked")
             os.makedirs(qgz_extract_dir, exist_ok=True)
             
+            norm_extract_dir = os.path.normpath(qgz_extract_dir)
             with zipfile.ZipFile(temp_qgz_path, 'r') as zf:
                 for member in zf.namelist():
                     member_path = os.path.normpath(os.path.join(qgz_extract_dir, member))
-                    if not member_path.startswith(os.path.normpath(qgz_extract_dir) + os.sep) and member_path != os.path.normpath(qgz_extract_dir):
+                    if not member_path.startswith(norm_extract_dir + os.sep) and member_path != norm_extract_dir:
                         raise ValueError(f"Unsafe path in archive: {member}")
                     zf.extract(member, qgz_extract_dir)
                 

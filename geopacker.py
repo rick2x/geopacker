@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
 
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QMessageBox
+from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsApplication
 
 from .geopacker_dialog import GeopackerDialog
