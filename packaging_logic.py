@@ -17,6 +17,14 @@ from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QTextDocument
 from qgis.PyQt.QtPrintSupport import QPrinter
 
+
+def _safe_file_size(path):
+    """Return os.path.getsize(path) or 0 on any error."""
+    try:
+        return os.path.getsize(path) if os.path.isfile(path) else 0
+    except OSError:
+        return 0
+
 class GeopackerLogic:
     def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, only_selected=False, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
         self.output_file = output_file
@@ -46,6 +54,160 @@ class GeopackerLogic:
         app = QCoreApplication.instance()
         if app:
             app.processEvents()
+
+    # ------------------------------------------------------------------ #
+    #  Pre-run file-size estimator                                        #
+    # ------------------------------------------------------------------ #
+    @staticmethod
+    def estimate_project_size(
+        project=None,
+        strip_duplicates=True,
+        strip_empty=True,
+        skip_remote=True,
+        only_selected=False,
+    ):
+        """Walk every layer in *project* and return an estimated byte count.
+
+        The packager exports each vector layer as a separate GeoPackage
+        table, so every layer contributes independently to the output size
+        even if multiple layers share the same underlying source file.
+        Memory layers (no file on disk) are estimated via a heuristic
+        based on feature count and field count.
+
+        Returns
+        -------
+        dict  with keys:
+            'vectors'  – estimated bytes for all vector layer exports
+            'rasters'  – total bytes of local raster files + sidecars
+            'styles'   – total bytes of loose .qml sidecar files
+            'project'  – byte size of the .qgz project file itself
+            'total'    – grand total (sum of the above)
+            'layer_count' – number of layers that would be packaged
+            'formatted'   – human-readable string like "423.5 MB"
+        """
+        if project is None:
+            project = QgsProject.instance()
+
+        vectors_bytes = 0
+        rasters_bytes = 0
+        styles_bytes = 0
+        project_bytes = 0
+        layer_count = 0
+
+        # Project file itself
+        proj_path = project.fileName()
+        if proj_path and os.path.isfile(proj_path):
+            project_bytes = _safe_file_size(proj_path)
+
+        seen_sources = set()
+        counted_style_files = set()   # deduplicate .qml sidecars only
+        counted_raster_files = set()  # deduplicate raster files
+
+        for layer in project.mapLayers().values():
+            # --- same filtering rules the real packager applies ----------
+            if strip_empty:
+                if layer.type() == QgsVectorLayer.VectorLayer:
+                    if layer.dataProvider() and layer.dataProvider().name() == 'memory':
+                        if layer.featureCount() <= 0:
+                            continue
+
+            source = layer.publicSource()
+            if strip_duplicates:
+                if source in seen_sources:
+                    continue
+                seen_sources.add(source)
+
+            # Vector layers — each is exported independently to GeoPackage
+            if layer.type() == QgsVectorLayer.VectorLayer:
+                provider_name = layer.dataProvider().name() if layer.dataProvider() else ''
+                if skip_remote and provider_name not in ('ogr', 'memory', 'delimitedtext', 'gpx', 'spatialite'):
+                    continue
+
+                layer_count += 1
+
+                src = layer.dataProvider().dataSourceUri() if layer.dataProvider() else ''
+                if src and '|' in src:
+                    src = src.split('|')[0]
+
+                if src and os.path.isfile(src):
+                    # File-backed layer: use source file size as estimate
+                    # (each layer is re-exported, so count per-layer, no dedup)
+                    vectors_bytes += _safe_file_size(src)
+
+                    # Loose .qml sidecar (deduplicate these since only one copy is made)
+                    base, _ = os.path.splitext(src)
+                    qml = base + '.qml'
+                    if os.path.isfile(qml) and qml not in counted_style_files:
+                        styles_bytes += _safe_file_size(qml)
+                        counted_style_files.add(qml)
+                else:
+                    # Memory / non-file layer: estimate from feature & field count
+                    # GeoPackage overhead ≈ 4KB base + ~200 bytes per feature per field
+                    feat_count = layer.featureCount() if layer.featureCount() > 0 else 0
+                    field_count = max(layer.fields().count(), 1)
+                    # Add ~40 bytes per feature for geometry (points are small,
+                    # polygons vary — 40 bytes is a conservative average)
+                    row_bytes = (field_count * 200) + 40
+                    vectors_bytes += 4096 + (feat_count * row_bytes)
+
+            # Raster layers
+            elif layer.type() == QgsRasterLayer.RasterLayer:
+                src = layer.dataProvider().dataSourceUri() if layer.dataProvider() else ''
+                if not (src and os.path.isfile(src)):
+                    continue
+
+                layer_count += 1
+                source_dir = os.path.dirname(src)
+                base_name, _ = os.path.splitext(os.path.basename(src))
+                filename = os.path.basename(src)
+
+                # Try GDAL file-list first, fall back to manual sidecar scan
+                try:
+                    from osgeo import gdal
+                    ds = gdal.Open(src)
+                    if ds:
+                        file_list = ds.GetFileList() or []
+                        ds = None
+                        for f in file_list:
+                            if os.path.isfile(f) and f not in counted_raster_files:
+                                rasters_bytes += _safe_file_size(f)
+                                counted_raster_files.add(f)
+                        continue  # already counted via GDAL
+                except (ImportError, OSError, RuntimeError):
+                    pass
+
+                # Manual fallback – main file + common sidecars
+                if src not in counted_raster_files:
+                    rasters_bytes += _safe_file_size(src)
+                    counted_raster_files.add(src)
+                if os.path.isdir(source_dir):
+                    for f in os.listdir(source_dir):
+                        if f == filename or f.startswith(base_name + '.') or f.startswith(filename + '.'):
+                            fp = os.path.join(source_dir, f)
+                            if os.path.isfile(fp) and fp not in counted_raster_files:
+                                rasters_bytes += _safe_file_size(fp)
+                                counted_raster_files.add(fp)
+
+        total = vectors_bytes + rasters_bytes + styles_bytes + project_bytes
+
+        # Human-readable formatter
+        def _fmt(b):
+            if b == 0:
+                return '0 B'
+            units = ('B', 'KB', 'MB', 'GB', 'TB')
+            i = int(math.floor(math.log(b, 1024)))
+            p = math.pow(1024, i)
+            return f'{round(b / p, 2)} {units[i]}'
+
+        return {
+            'vectors': vectors_bytes,
+            'rasters': rasters_bytes,
+            'styles': styles_bytes,
+            'project': project_bytes,
+            'total': total,
+            'layer_count': layer_count,
+            'formatted': _fmt(total) if total > 0 else '0 B',
+        }
 
     def is_layer_empty_temp(self, layer):
         if not layer.isValid():

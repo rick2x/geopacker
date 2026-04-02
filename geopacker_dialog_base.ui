@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>250</height>
+    <height>320</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -80,6 +80,16 @@
       <bool>false</bool>
      </property>
     </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="lblEstimatedSize">
+       <property name="text">
+        <string>Estimated Output Size: —</string>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font-weight: bold; color: #D35400; font-size: 9pt;</string>
+       </property>
+      </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">

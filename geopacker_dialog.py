@@ -16,6 +16,88 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         # Connect signals
         self.btnRun.clicked.connect(self.run_packaging)
         self.btnCancel.clicked.connect(self.close)
+        # Auto-update estimate when any filter checkbox changes
+        self.chkStripDuplicates.toggled.connect(self._update_estimate)
+        self.chkStripEmpty.toggled.connect(self._update_estimate)
+        self.chkSkipRemoteVectors.toggled.connect(self._update_estimate)
+        self.chkOnlySelected.toggled.connect(self._update_estimate)
+
+    # ------------------------------------------------------------------ #
+    #  Estimated Output Size                                               #
+    # ------------------------------------------------------------------ #
+    def showEvent(self, event):
+        """Auto-calculate the estimate every time the dialog is shown."""
+        super().showEvent(event)
+        self._update_estimate()
+
+    def _update_estimate(self):
+        """Run the estimator and update the label with a breakdown."""
+        from .packaging_logic import GeopackerLogic
+
+        try:
+            est = GeopackerLogic.estimate_project_size(
+                strip_duplicates=self.chkStripDuplicates.isChecked(),
+                strip_empty=self.chkStripEmpty.isChecked(),
+                skip_remote=self.chkSkipRemoteVectors.isChecked(),
+                only_selected=self.chkOnlySelected.isChecked(),
+            )
+        except Exception as e:
+            from qgis.core import QgsMessageLog, Qgis
+            QgsMessageLog.logMessage(
+                f"Estimate failed: {e}", "Geopacker", Qgis.Warning
+            )
+            self.lblEstimatedSize.setText("Estimated Output Size: (unable to calculate)")
+            return
+
+        total = est['total']
+        if total == 0:
+            self.lblEstimatedSize.setText(
+                f"Estimated Output Size: 0 B — {est['layer_count']} layer(s)"
+            )
+            self.lblEstimatedSize.setStyleSheet(
+                "font-weight: bold; color: #7F8C8D; font-size: 9pt;"
+            )
+            return
+
+        # Build category breakdown
+        import math
+
+        def _fmt(b):
+            if b == 0:
+                return '0 B'
+            units = ('B', 'KB', 'MB', 'GB', 'TB')
+            i = int(math.floor(math.log(b, 1024)))
+            p = math.pow(1024, i)
+            return f'{round(b / p, 2)} {units[i]}'
+
+        parts = []
+        if est['vectors'] > 0:
+            parts.append(f"Vectors: {_fmt(est['vectors'])}")
+        if est['rasters'] > 0:
+            parts.append(f"Rasters: {_fmt(est['rasters'])}")
+        if est['styles'] > 0:
+            parts.append(f"Styles: {_fmt(est['styles'])}")
+        if est['project'] > 0:
+            parts.append(f"Project: {_fmt(est['project'])}")
+
+        breakdown = " | ".join(parts)
+        text = f"Estimated Output Size: ~{est['formatted']}"
+        if breakdown:
+            text += f"  ({breakdown})"
+        text += f" — {est['layer_count']} layer(s)"
+
+        # Color: red for ≥ 10 GB, orange for ≥ 1 GB, teal for normal
+        if total >= 10 * 1024 ** 3:
+            color = "#C0392B"
+        elif total >= 1 * 1024 ** 3:
+            color = "#D35400"
+        else:
+            color = "#16A085"
+
+        self.lblEstimatedSize.setText(text)
+        self.lblEstimatedSize.setStyleSheet(
+            f"font-weight: bold; color: {color}; font-size: 9pt;"
+        )
 
     def run_packaging(self):
         from .packaging_logic import GeopackerLogic
@@ -62,3 +144,4 @@ class GeopackerDialog(QDialog, FORM_CLASS):
                     )
             from qgis.PyQt.QtWidgets import QMessageBox
             QMessageBox.critical(self, "Error", f"Failed to package project:\n{str(e)}")
+
