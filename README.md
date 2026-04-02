@@ -4,7 +4,8 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.3-blue)
+![Version](https://img.shields.io/badge/version-1.4-blue)
+![License](https://img.shields.io/badge/license-GPLv2-green)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
 
@@ -24,10 +25,12 @@ Sharing QGIS projects often results in broken file paths because standard tools 
 | **Duplicate Checking** | ❌ Blindly processes duplicates, inflating file size. | ✅ Actively detects and **strips duplicate** layer sources. |
 | **Empty Layers** | ❌ Packages empty workspace/scratch layers. | ✅ Automatically **trims out empty** memory layers. |
 | **Remote Layers** | ❌ Attempts to download massive WFS datasets. | ✅ Safely **skips remote vectors**, keeping them linked online. |
+| **Pre-Run Size Estimate** | ❌ No visibility into output size before running. | ✅ Displays a **live estimated output size** with color-coded warnings before packaging begins. |
 | **Final Output** | ❌ Yields a loose, unmanaged GeoPackage file. | ✅ Generates a **single, safe, email-ready `.zip`** archive containing a detailed Enterprise-Grade Audit Report (`packaging_report.pdf`). |
 
 ## Features
 - **Headless & CLI Support**: Run Geopacker natively from the terminal (`qgis_process`) or stitch it into your QGIS Graphical Models via the standard QGIS Processing Toolbox.
+- **Estimated Output Size**: Before you click Run, the plugin dialog displays a live, color-coded estimate of the final package size with a per-category breakdown (Vectors, Rasters, Styles, Project). The estimate updates automatically as you toggle filter checkboxes. Sizes ≥ 1 GB are highlighted orange; sizes ≥ 10 GB are highlighted red.
 - **Consolidates Vectors**: Exports all valid shapefiles, GeoJSONs, etc. into a single `packaged_data.gpkg`.
 - **Grouped GeoPackages**: Optionally splits vector layers into multiple distinct `.gpkg` databases based on their QGIS Layer Tree Group mapping (e.g. `Water-System.gpkg`).
 - **Collects Rasters & Sidecars**: Automatically bundles local rasters alongside any matching sidecar files (like `.tfw` or `.prj`) into a unified `rasters/` directory using GDAL associations.
@@ -37,10 +40,11 @@ Sharing QGIS projects often results in broken file paths because standard tools 
 - **Smart Path Remapping**: Behind the scenes, the plugin unzips a copy of your `.qgz` project, parses the underlying XML, and updates all layer and media data sources to point to the new relatively-pathed items.
 - **Dynamic ZIP Naming**: The QGIS project file securely nested inside the ZIP archive takes on the same matching name as your exported zip file (e.g., `MyProject.zip` will contain `MyProject.qgz`).
 - **Smart Trimming**: Optional checkboxes to strip out empty memory layers and duplicate layer sources to keep your packaged file size down.
-- **Selected Features Only**: New granular control allows you to export *only* the specific highlighted/selected features of your vector layers, while still correctly exporting all other layers in full.
+- **Selected Features Only**: Granular control allows you to export *only* the specific highlighted/selected features of your vector layers, while still correctly exporting all other layers in full.
 - **Remote Layer Protection**: Automatically detects remote vectors (e.g. WFS/Online) and securely skips downloading them while retaining their dynamic online links in the final project.
 - **Graceful Error Handling**: Actively protects you by deleting partial ZIP exports if an unrecoverable system error occurs mid-process, ensuring no corrupt maps are sent.
 - **Error Reporting**: Informs you of exactly which layers were skipped or failed to export.
+- **In-Dialog Help**: A built-in Help button in the plugin dialog links directly to this documentation for quick reference.
 
 ## Installation
 1. Download a Geopacker ZIP release from this repository.
@@ -50,13 +54,14 @@ Sharing QGIS projects often results in broken file paths because standard tools 
 
 ## Usage
 
-### 1. Via the Legacy Plugin Dialog
+### 1. Via the Plugin Dialog
 1. Open your target mapping project in QGIS.
 2. Click the Geopacker icon or find it under the **Plugins** > **Geopacker** menu.
-3. Choose the destination path for your packaged `.zip` file.
-4. Check the options to remove duplicates, empty temporary layers, or skip remote vectors if desired.
-5. Click **Run**.
-6. Wait for the success dialog (which will also list any skipped or failed layers).
+3. Review the **Estimated Output Size** displayed at the bottom of the dialog — it updates live as you toggle options.
+4. Choose the destination path for your packaged `.zip` file.
+5. Check the options to remove duplicates, empty temporary layers, skip remote vectors, export only selected features, or group GeoPackages by layer group.
+6. Click **Run**.
+7. Wait for the success dialog (which will also list any skipped or failed layers).
 
 ### 2. Via the QGIS Processing Toolbox
 1. In QGIS, open the **Processing Toolbox** panel (`Ctrl+Alt+T`).
@@ -72,7 +77,8 @@ Open your OSGeo4W Shell (or terminal with QGIS mapped to PATH) and run:
 qgis_process run geopacker:package_project --INPUT="C:/maps/my_map.qgz" --OUTPUT="C:/temp/qwe.zip"
 ```
 *(You can run `qgis_process help geopacker:package_project` to see all available CLI flags).*
-7. Share the resulting `.zip` file with your colleagues or clients!
+
+Share the resulting `.zip` file with your colleagues or clients!
 
 ## Requirements
 - QGIS 3.0 or higher.
@@ -80,11 +86,15 @@ qgis_process run geopacker:package_project --INPUT="C:/maps/my_map.qgz" --OUTPUT
 - **Recommended:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing. Install via `pip install defusedxml` in the QGIS Python console.
 
 ## Changelog
- 
- ### 1.3
+
+### 1.4
+- **Estimated Output Size**: Added a live, color-coded file size estimator to the plugin dialog with per-category breakdown (Vectors, Rasters, Styles, Project). The estimate auto-refreshes whenever filter checkboxes are toggled.
+- **Code Quality**: Removed unused imports (`QgsProcessing`, `QMessageBox`, `sys`), cached redundant API calls in loops (`layerTreeRoot()`, `os.path.normpath()`), and general codebase cleanup.
+
+### 1.3
 - **QGIS 4.0 Compatibility**: Added official support for QGIS 4.0 and updated plugin metadata for better cross-version compatibility.
- 
- ### 1.2.2
+
+### 1.2.2
 - **Bug Fix**: Fixed an issue where the active QGIS project's file path would be temporarily changed to the internal packaging directory, causing subsequent saves to fail or target a deleted folder.
 
 ### 1.2.1
@@ -128,6 +138,10 @@ qgis_process run geopacker:package_project --INPUT="C:/maps/my_map.qgz" --OUTPUT
 
 ### 1.0.0
 - Initial release of Geopacker
+
+## License
+
+Geopacker is released under the [GNU General Public License v2](LICENSE) or later.
 
 ## Contributing and Bug Reports
 Please report any bugs or feature requests on the [GitHub Issues tracker](https://github.com/rick2x/geopacker/issues).

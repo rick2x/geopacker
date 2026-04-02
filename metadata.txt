@@ -3,7 +3,7 @@ name=Geopacker
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Bundles an entire QGIS project (.qgz) into an easily shareable, single compressed file. Consolidates vectors, rasters, layout images, and .qml styles, then fixes layer paths.
-version=1.3
+version=1.4
 author=Frederick Cuario
 email=rrcuario@gmail.com
 about=A tool to package layers for sharing by eliminating broken paths.
@@ -16,7 +16,8 @@ experimental=False
 tags=geopackage,share,package,zip,export
 has_processing_provider=True
 license=GNU General Public License v2 or later
-changelog=1.3 - Added official support for QGIS 4.0 and improved metadata compatibility.
+changelog=1.4 - Added live, color-coded Estimated Output Size to the plugin dialog with per-category breakdown. Code quality cleanup: removed unused imports, cached redundant API calls in loops.
+    1.3 - Added official support for QGIS 4.0 and improved metadata compatibility.
     1.2.2 - Fixed an issue where the active QGIS project's file path would be temporarily changed to the internal packaging directory, causing subsequent saves to fail or target a deleted folder.
     1.2.1 - Export Selected Features: Added a new feature to smartly export only selected geometries for vector layers if an active selection exists.
     1.2.0 - Headless QGIS Execution & Processing Toolbox Integration: Completely decoupled packaging logic from the Qt GUI, registering Geopacker as a native QGIS Processing Provider. It can now be chained in the Graphical Modeler or run headless via the `qgis_process` CLI.
