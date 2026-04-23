@@ -76,6 +76,11 @@ class Geopacker:
 
     def run(self):
         """Run method that performs all the real work"""
+        # Check for dependencies first
+        from .dependency_manager import check_and_install_dependencies
+        if not check_and_install_dependencies(self.iface.mainWindow()):
+            return
+
         if self.dlg is None:
             self.dlg = GeopackerDialog()
             self.dlg.btnHelp.clicked.connect(self.show_help)

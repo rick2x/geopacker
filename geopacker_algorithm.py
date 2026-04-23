@@ -103,6 +103,12 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         )
 
     def processAlgorithm(self, parameters, context, feedback):
+        # Check for dependencies
+        from .dependency_manager import check_and_install_dependencies
+        # Use QgsMessageLog via feedback if parent is not available
+        if not check_and_install_dependencies():
+            return {}
+
         input_project_path = self.parameterAsFile(parameters, self.INPUT, context)
         output_zip_path = self.parameterAsFileOutput(parameters, self.OUTPUT, context)
         

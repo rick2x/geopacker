@@ -18,6 +18,8 @@ from qgis.PyQt.QtGui import QTextDocument
 from qgis.PyQt.QtPrintSupport import QPrinter
 
 
+
+
 def _safe_file_size(path):
     """Return os.path.getsize(path) or 0 on any error."""
     try:
@@ -486,21 +488,17 @@ class GeopackerLogic:
                     break
                     
             if qgs_file:
-                try:
-                    import defusedxml.ElementTree as ET
-                    import defusedxml
-                    defusedxml.defuse_stdlib()
-                    tree = ET.parse(qgs_file)
-                except ImportError:
-                    QgsMessageLog.logMessage(
-                        "defusedxml not found — falling back to standard XML parser. "
-                        "Install defusedxml for safer XML handling.",
-                        "Geopacker", Qgis.Warning
-                    )
-                    import xml.etree.ElementTree as ET
-                    tree = ET.parse(qgs_file)
+                # Import defusedxml lazily to avoid crash on plugin load if missing
+                import defusedxml.ElementTree as ET
+                import defusedxml
+                defusedxml.defuse_stdlib()
+                
+                # Use defusedxml to safely parse the QGS project file
+                tree = ET.parse(qgs_file)
+
                 
                 root = tree.getroot()
+
                 
                 # --- Media Packaging Logic ---
                 media_mapping = {}

@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.4-blue)
+![Version](https://img.shields.io/badge/version-1.5-blue)
 ![License](https://img.shields.io/badge/license-GPLv2-green)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
@@ -83,9 +83,16 @@ Share the resulting `.zip` file with your colleagues or clients!
 ## Requirements
 - QGIS 3.0 or higher.
 - Python 3 environment (native to QGIS installations).
-- **Recommended:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing. Install via `pip install defusedxml` in the QGIS Python console.
+- **Mandatory:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing.
+  - To install, open your **OSGeo4W Shell** as Administrator and run: `pip install defusedxml`.
+  - **Visual Guide:** [Watch the Installation Guide on Google Drive](https://drive.google.com/file/d/1N_ZH5FGswiRzNG-Ojwflbsdfa22fJ0YE/view?usp=sharing)
 
 ## Changelog
+
+### 1.5
+- **Security Hardening**: Enforced the use of `defusedxml` for all XML project remapping to prevent potential security vulnerabilities (Remediates Bandit B314).
+- **Dependency Management**: Added an in-app diagnostic warning when requirements are missing, providing clear manual installation instructions for the OSGeo4W Shell.
+- **Visual Setup Guide**: Added a link to a visual installation guide for dependencies.
 
 ### 1.4
 - **Estimated Output Size**: Added a live, color-coded file size estimator to the plugin dialog with per-category breakdown (Vectors, Rasters, Styles, Project). The estimate auto-refreshes whenever filter checkboxes are toggled.
