@@ -28,12 +28,13 @@ def _safe_file_size(path):
         return 0
 
 class GeopackerLogic:
-    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, only_selected=False, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
+    def __init__(self, output_file, strip_duplicates=True, strip_empty=True, skip_remote=True, only_selected=False, export_unfiltered=False, group_gpkgs=False, progress_bar=None, status_label=None, project=None, feedback=None):
         self.output_file = output_file
         self.strip_duplicates = strip_duplicates
         self.strip_empty = strip_empty
         self.skip_remote = skip_remote
         self.only_selected = only_selected
+        self.export_unfiltered = export_unfiltered
         self.group_gpkgs = group_gpkgs
         self.progress_bar = progress_bar
         self.status_label = status_label
@@ -339,8 +340,18 @@ class GeopackerLogic:
                     if os.path.exists(target_gpkg):
                         options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
                     
-                    write_result = QgsVectorFileWriter.writeAsVectorFormatV3(
-                        layer, target_gpkg, self.project.transformContext(), options)
+                    original_subset_string = ""
+                    if self.export_unfiltered:
+                        original_subset_string = layer.subsetString()
+                        if original_subset_string:
+                            layer.setSubsetString("")
+
+                    try:
+                        write_result = QgsVectorFileWriter.writeAsVectorFormatV3(
+                            layer, target_gpkg, self.project.transformContext(), options)
+                    finally:
+                        if self.export_unfiltered and original_subset_string:
+                            layer.setSubsetString(original_subset_string)
                         
                     writer_err = write_result[0]
                     error_msg = write_result[1] if len(write_result) > 1 else str(writer_err)

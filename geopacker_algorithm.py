@@ -20,6 +20,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
     STRIP_EMPTY = 'STRIP_EMPTY'
     SKIP_REMOTE = 'SKIP_REMOTE'
     ONLY_SELECTED = 'ONLY_SELECTED'
+    EXPORT_UNFILTERED = 'EXPORT_UNFILTERED'
     GROUP_GPKGS = 'GROUP_GPKGS'
 
     def tr(self, string):
@@ -88,6 +89,14 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
 
         self.addParameter(
             QgsProcessingParameterBoolean(
+                self.EXPORT_UNFILTERED,
+                self.tr('Export unfiltered data for filtered layers'),
+                defaultValue=False
+            )
+        )
+
+        self.addParameter(
+            QgsProcessingParameterBoolean(
                 self.GROUP_GPKGS,
                 self.tr('Group GPKGs by their Layer Tree hierarchy'),
                 defaultValue=False
@@ -116,6 +125,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         strip_empty = self.parameterAsBool(parameters, self.STRIP_EMPTY, context)
         skip_remote = self.parameterAsBool(parameters, self.SKIP_REMOTE, context)
         only_selected = self.parameterAsBool(parameters, self.ONLY_SELECTED, context)
+        export_unfiltered = self.parameterAsBool(parameters, self.EXPORT_UNFILTERED, context)
         group_gpkgs = self.parameterAsBool(parameters, self.GROUP_GPKGS, context)
 
         # Load the project
@@ -134,6 +144,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
             strip_empty=strip_empty,
             skip_remote=skip_remote,
             only_selected=only_selected,
+            export_unfiltered=export_unfiltered,
             group_gpkgs=group_gpkgs,
             project=project,
             feedback=feedback

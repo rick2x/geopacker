@@ -21,6 +21,8 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         self.chkStripEmpty.toggled.connect(self._update_estimate)
         self.chkSkipRemoteVectors.toggled.connect(self._update_estimate)
         self.chkOnlySelected.toggled.connect(self._update_estimate)
+        self.chkGroupGpkgs.toggled.connect(self._update_estimate)
+        self.chkExportUnfiltered.toggled.connect(self._update_estimate)
 
     # ------------------------------------------------------------------ #
     #  Estimated Output Size                                               #
@@ -40,6 +42,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
                 strip_empty=self.chkStripEmpty.isChecked(),
                 skip_remote=self.chkSkipRemoteVectors.isChecked(),
                 only_selected=self.chkOnlySelected.isChecked(),
+                export_unfiltered=self.chkExportUnfiltered.isChecked(),
             )
         except Exception as e:
             from qgis.core import QgsMessageLog, Qgis
@@ -106,6 +109,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         strip_empty = self.chkStripEmpty.isChecked()
         skip_remote = self.chkSkipRemoteVectors.isChecked()
         only_selected = self.chkOnlySelected.isChecked()
+        export_unfiltered = self.chkExportUnfiltered.isChecked()
         group_gpkgs = self.chkGroupGpkgs.isChecked()
         
         if not output_file:
@@ -119,6 +123,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
             strip_empty=strip_empty,
             skip_remote=skip_remote,
             only_selected=only_selected,
+            export_unfiltered=export_unfiltered,
             group_gpkgs=group_gpkgs,
             progress_bar=self.progressBar,
             status_label=self.lblStatus

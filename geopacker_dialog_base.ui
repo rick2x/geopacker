@@ -82,6 +82,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="chkExportUnfiltered">
+     <property name="text">
+      <string>Export unfiltered data for filtered layers</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="lblEstimatedSize">
        <property name="text">
         <string>Estimated Output Size: —</string>
