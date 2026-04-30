@@ -16,7 +16,8 @@ experimental=False
 tags=geopackage,share,package,zip,export
 has_processing_provider=True
 license=GNU General Public License v2 or later
-changelog=1.5 - Security and stability update: Hardened XML parsing logic by enforcing the use of defusedxml. Replaced automated dependency installation with a diagnostic guide for OSGeo4W Shell to improve reliability on Windows environments.
+changelog=1.5.1 - Added toggle for "Retain full datasets for filtered layers" and improved PyQt6 compatibility for dialog components and PDF reporting.
+    1.5 - Security and stability update: Hardened XML parsing logic by enforcing the use of defusedxml. Replaced automated dependency installation with a diagnostic guide for OSGeo4W Shell to improve reliability on Windows environments.
     1.4 - Added live, color-coded Estimated Output Size to the plugin dialog with per-category breakdown. Code quality cleanup: removed unused imports, cached redundant API calls in loops.
     1.3 - Added official support for QGIS 4.0 and improved metadata compatibility.
     1.2.2 - Fixed an issue where the active QGIS project's file path would be temporarily changed to the internal packaging directory, causing subsequent saves to fail or target a deleted folder.
