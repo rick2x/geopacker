@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.5.1-blue)
+![Version](https://img.shields.io/badge/version-1.5.2-blue)
 ![License](https://img.shields.io/badge/license-GPLv2-green)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
@@ -88,6 +88,9 @@ Share the resulting `.zip` file with your colleagues or clients!
   - **Visual Guide:** [Watch the Installation Guide on Google Drive](https://drive.google.com/file/d/1N_ZH5FGswiRzNG-Ojwflbsdfa22fJ0YE/view?usp=sharing)
 
 ## Changelog
+
+### 1.5.2
+- **Bug Fix**: Fixed an issue with XML project remapping where `defusedxml.ElementTree` was missing the `SubElement` attribute. Improved robustness of XML tree building while maintaining secure parsing.
 
 ### 1.5.1
 - **Filter Retention**: Added "Retain full datasets for filtered layers" toggle to allow packaging the entire dataset while preserving the filter view upon reopening.

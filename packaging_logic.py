@@ -548,12 +548,13 @@ class GeopackerLogic:
 
             if qgs_file:
                 # Import defusedxml lazily to avoid crash on plugin load if missing
-                import defusedxml.ElementTree as ET
+                import xml.etree.ElementTree as ET
+                import defusedxml.ElementTree as defused_ET
                 import defusedxml
                 defusedxml.defuse_stdlib()
 
                 # Use defusedxml to safely parse the QGS project file
-                tree = ET.parse(qgs_file)
+                tree = defused_ET.parse(qgs_file)
 
                 root = tree.getroot()
 
