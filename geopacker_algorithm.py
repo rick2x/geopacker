@@ -9,6 +9,7 @@ from qgis.core import (QgsProcessingAlgorithm,
 
 from .packaging_logic import GeopackerLogic
 
+
 class GeopackerAlgorithm(QgsProcessingAlgorithm):
     """
     Geopacker QGIS Processing Algorithm for headless execution.
@@ -21,6 +22,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
     SKIP_REMOTE = 'SKIP_REMOTE'
     ONLY_SELECTED = 'ONLY_SELECTED'
     GROUP_GPKGS = 'GROUP_GPKGS'
+    RETAIN_FULL_FILTERED = 'RETAIN_FULL_FILTERED'
 
     def tr(self, string):
         return QCoreApplication.translate('Processing', string)
@@ -47,7 +49,8 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFile(
                 self.INPUT,
-                self.tr('Input QGIS Project (.qgz) (Optional: leave empty to use current)'),
+                self.tr(
+                    'Input QGIS Project (.qgz) (Optional: leave empty to use current)'),
                 optional=True,
                 extension='qgz',
                 behavior=QgsProcessingParameterFile.File
@@ -95,6 +98,15 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         )
 
         self.addParameter(
+            QgsProcessingParameterBoolean(
+                self.RETAIN_FULL_FILTERED,
+                self.tr(
+                    'Retain full datasets for filtered layers (restore filter view on open)'),
+                defaultValue=False
+            )
+        )
+
+        self.addParameter(
             QgsProcessingParameterFileDestination(
                 self.OUTPUT,
                 self.tr('Output ZIP File'),
@@ -109,14 +121,23 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         if not check_and_install_dependencies():
             return {}
 
-        input_project_path = self.parameterAsFile(parameters, self.INPUT, context)
-        output_zip_path = self.parameterAsFileOutput(parameters, self.OUTPUT, context)
-        
-        strip_duplicates = self.parameterAsBool(parameters, self.STRIP_DUPLICATES, context)
-        strip_empty = self.parameterAsBool(parameters, self.STRIP_EMPTY, context)
-        skip_remote = self.parameterAsBool(parameters, self.SKIP_REMOTE, context)
-        only_selected = self.parameterAsBool(parameters, self.ONLY_SELECTED, context)
-        group_gpkgs = self.parameterAsBool(parameters, self.GROUP_GPKGS, context)
+        input_project_path = self.parameterAsFile(
+            parameters, self.INPUT, context)
+        output_zip_path = self.parameterAsFileOutput(
+            parameters, self.OUTPUT, context)
+
+        strip_duplicates = self.parameterAsBool(
+            parameters, self.STRIP_DUPLICATES, context)
+        strip_empty = self.parameterAsBool(
+            parameters, self.STRIP_EMPTY, context)
+        skip_remote = self.parameterAsBool(
+            parameters, self.SKIP_REMOTE, context)
+        only_selected = self.parameterAsBool(
+            parameters, self.ONLY_SELECTED, context)
+        group_gpkgs = self.parameterAsBool(
+            parameters, self.GROUP_GPKGS, context)
+        retain_full_filtered = self.parameterAsBool(
+            parameters, self.RETAIN_FULL_FILTERED, context)
 
         # Load the project
         project = QgsProject.instance()
@@ -124,9 +145,10 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
             feedback.pushInfo(f"Loading project from {input_project_path}")
             project = QgsProject()
             if not project.read(input_project_path):
-                feedback.reportError(f"Failed to load project from {input_project_path}")
+                feedback.reportError(
+                    f"Failed to load project from {input_project_path}")
                 return {}
-        
+
         # Initialize and run logic
         logic = GeopackerLogic(
             output_file=output_zip_path,
@@ -135,13 +157,15 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
             skip_remote=skip_remote,
             only_selected=only_selected,
             group_gpkgs=group_gpkgs,
+            retain_full_filtered=retain_full_filtered,
             project=project,
             feedback=feedback
         )
-        
+
         failed_layers = logic.run()
 
         if failed_layers:
-            feedback.pushWarning("Some layers failed to package. Check the generated report in the output ZIP.")
+            feedback.pushWarning(
+                "Some layers failed to package. Check the generated report in the output ZIP.")
 
         return {self.OUTPUT: output_zip_path}

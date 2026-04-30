@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>320</height>
+    <height>350</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -75,6 +75,16 @@
     <widget class="QCheckBox" name="chkGroupGpkgs">
      <property name="text">
       <string>Separate GeoPackages by Layer Group</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="chkRetainFullFiltered">
+     <property name="text">
+      <string>Retain full datasets for filtered layers (Unfilter upon packaging)</string>
      </property>
      <property name="checked">
       <bool>false</bool>

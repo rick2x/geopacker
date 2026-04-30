@@ -7,12 +7,13 @@ from qgis.PyQt.QtWidgets import QDialog
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'geopacker_dialog_base.ui'))
 
+
 class GeopackerDialog(QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(GeopackerDialog, self).__init__(parent)
         self.setupUi(self)
-        
+
         # Connect signals
         self.btnRun.clicked.connect(self.run_packaging)
         self.btnCancel.clicked.connect(self.close)
@@ -21,6 +22,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         self.chkStripEmpty.toggled.connect(self._update_estimate)
         self.chkSkipRemoteVectors.toggled.connect(self._update_estimate)
         self.chkOnlySelected.toggled.connect(self._update_estimate)
+        self.chkRetainFullFiltered.toggled.connect(self._update_estimate)
 
     # ------------------------------------------------------------------ #
     #  Estimated Output Size                                               #
@@ -40,13 +42,15 @@ class GeopackerDialog(QDialog, FORM_CLASS):
                 strip_empty=self.chkStripEmpty.isChecked(),
                 skip_remote=self.chkSkipRemoteVectors.isChecked(),
                 only_selected=self.chkOnlySelected.isChecked(),
+                retain_full_filtered=self.chkRetainFullFiltered.isChecked(),
             )
         except Exception as e:
             from qgis.core import QgsMessageLog, Qgis
             QgsMessageLog.logMessage(
                 f"Estimate failed: {e}", "Geopacker", Qgis.Warning
             )
-            self.lblEstimatedSize.setText("Estimated Output Size: (unable to calculate)")
+            self.lblEstimatedSize.setText(
+                "Estimated Output Size: (unable to calculate)")
             return
 
         total = est['total']
@@ -107,19 +111,22 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         skip_remote = self.chkSkipRemoteVectors.isChecked()
         only_selected = self.chkOnlySelected.isChecked()
         group_gpkgs = self.chkGroupGpkgs.isChecked()
-        
+        retain_full_filtered = self.chkRetainFullFiltered.isChecked()
+
         if not output_file:
             from qgis.PyQt.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Error", "Please select an output zip file.")
+            QMessageBox.warning(
+                self, "Error", "Please select an output zip file.")
             return
-            
+
         logic = GeopackerLogic(
-            output_file=output_file, 
-            strip_duplicates=strip_dupes, 
+            output_file=output_file,
+            strip_duplicates=strip_dupes,
             strip_empty=strip_empty,
             skip_remote=skip_remote,
             only_selected=only_selected,
             group_gpkgs=group_gpkgs,
+            retain_full_filtered=retain_full_filtered,
             progress_bar=self.progressBar,
             status_label=self.lblStatus
         )
@@ -127,10 +134,13 @@ class GeopackerDialog(QDialog, FORM_CLASS):
             failed_layers = logic.run()
             from qgis.PyQt.QtWidgets import QMessageBox
             if failed_layers:
-                msg = "Packaging completed, but the following layers failed or were skipped:\n" + "\n".join(failed_layers)
-                QMessageBox.warning(self, "Partial Success", f"Project packaged to {output_file}\n\n{msg}")
+                msg = "Packaging completed, but the following layers failed or were skipped:\n" + \
+                    "\n".join(failed_layers)
+                QMessageBox.warning(self, "Partial Success",
+                                    f"Project packaged to {output_file}\n\n{msg}")
             else:
-                QMessageBox.information(self, "Success", f"Project packaged successfully to {output_file}")
+                QMessageBox.information(
+                    self, "Success", f"Project packaged successfully to {output_file}")
             self.accept()
         except Exception as e:
             if os.path.exists(output_file):
@@ -143,5 +153,5 @@ class GeopackerDialog(QDialog, FORM_CLASS):
                         "Geopacker", Qgis.Warning
                     )
             from qgis.PyQt.QtWidgets import QMessageBox
-            QMessageBox.critical(self, "Error", f"Failed to package project:\n{str(e)}")
-
+            QMessageBox.critical(
+                self, "Error", f"Failed to package project:\n{str(e)}")
