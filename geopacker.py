@@ -86,12 +86,15 @@ class Geopacker:
             self.dlg.btnHelp.clicked.connect(self.show_help)
 
         self.dlg.show()
-        result = self.dlg.exec_()
+        if hasattr(self.dlg, 'exec'):
+            result = self.dlg.exec()
+        else:
+            result = self.dlg.exec_()
         
         if result:
             pass
             
     def show_help(self):
-        from PyQt5.QtGui import QDesktopServices
-        from PyQt5.QtCore import QUrl
+        from qgis.PyQt.QtGui import QDesktopServices
+        from qgis.PyQt.QtCore import QUrl
         QDesktopServices.openUrl(QUrl("https://github.com/rick2x/geopacker/blob/main/README.md"))

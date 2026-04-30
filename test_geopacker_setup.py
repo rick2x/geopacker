@@ -7,7 +7,7 @@ from qgis.core import (
     QgsProject, QgsVectorLayer, QgsRasterLayer, QgsFeature, QgsGeometry,
     QgsPointXY, QgsField, QgsSingleSymbolRenderer, QgsMarkerSymbol
 )
-from PyQt5.QtCore import QVariant
+from qgis.PyQt.QtCore import QVariant
 
 def setup_test_project():
     project = QgsProject.instance()

@@ -31,13 +31,24 @@ def check_and_install_dependencies(parent=None):
         )
         
         box = QMessageBox(parent)
-        box.setIcon(QMessageBox.Critical)
+        
+        # Handle PyQt6 enum changes (scoping)
+        icon = getattr(QMessageBox, 'Icon', QMessageBox).Critical
+        button = getattr(QMessageBox, 'StandardButton', QMessageBox).Ok
+        text_format = getattr(Qt, 'TextFormat', Qt).RichText
+        interaction = getattr(Qt, 'TextInteractionFlag', Qt).TextBrowserInteraction
+
+        box.setIcon(icon)
         box.setWindowTitle("Dependency Missing")
-        box.setTextFormat(Qt.RichText)
+        box.setTextFormat(text_format)
         box.setText(msg)
-        box.setStandardButtons(QMessageBox.Ok)
+        box.setStandardButtons(button)
         # This flag makes the links clickable
-        box.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        box.exec_()
+        box.setTextInteractionFlags(interaction)
+        
+        if hasattr(box, 'exec'):
+            box.exec()
+        else:
+            box.exec_()
         
         return False
