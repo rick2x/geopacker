@@ -118,7 +118,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
         # Check for dependencies
         from .dependency_manager import check_and_install_dependencies
         # Use QgsMessageLog via feedback if parent is not available
-        if not check_and_install_dependencies():
+        if not check_and_install_dependencies(feedback=feedback):
             return {}
 
         input_project_path = self.parameterAsFile(

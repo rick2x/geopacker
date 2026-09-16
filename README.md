@@ -85,7 +85,6 @@ Share the resulting `.zip` file with your colleagues or clients!
 - Python 3 environment (native to QGIS installations).
 - **Mandatory:** [`defusedxml`](https://pypi.org/project/defusedxml/) for hardened XML parsing.
   - To install, open your **OSGeo4W Shell** as Administrator and run: `pip install defusedxml`.
-  - **Visual Guide:** [Watch the Installation Guide on Google Drive](https://drive.google.com/file/d/1N_ZH5FGswiRzNG-Ojwflbsdfa22fJ0YE/view?usp=sharing)
 
 ## Changelog
 
