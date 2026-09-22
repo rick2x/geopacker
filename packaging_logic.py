@@ -7,6 +7,7 @@ import datetime
 import math
 from qgis.core import (
     QgsProject,
+    QgsMapLayer,
     QgsVectorLayer,
     QgsRasterLayer,
     QgsVectorFileWriter,
@@ -50,7 +51,7 @@ class GeopackerLogic:
             self.status_label.setText(message)
         if self.progress_bar and progress is not None:
             self.progress_bar.setValue(progress)
-        QgsMessageLog.logMessage(message, "Geopacker", Qgis.Info)
+        QgsMessageLog.logMessage(message, "Geopacker", Qgis.MessageLevel.Info)
 
         # Keep UI responsive during long operations
         app = QCoreApplication.instance()
@@ -109,7 +110,7 @@ class GeopackerLogic:
         for layer in project.mapLayers().values():
             # --- same filtering rules the real packager applies ----------
             if strip_empty:
-                if layer.type() == QgsVectorLayer.VectorLayer:
+                if layer.type() == QgsMapLayer.LayerType.VectorLayer:
                     if layer.dataProvider() and layer.dataProvider().name() == 'memory':
                         if layer.featureCount() <= 0:
                             continue
@@ -121,7 +122,7 @@ class GeopackerLogic:
                 seen_sources.add(source)
 
             # Vector layers — each is exported independently to GeoPackage
-            if layer.type() == QgsVectorLayer.VectorLayer:
+            if layer.type() == QgsMapLayer.LayerType.VectorLayer:
                 provider_name = layer.dataProvider().name() if layer.dataProvider() else ''
                 if skip_remote and provider_name not in ('ogr', 'memory', 'delimitedtext', 'gpx', 'spatialite'):
                     continue
@@ -166,7 +167,7 @@ class GeopackerLogic:
                     vectors_bytes += 4096 + (feat_count * row_bytes)
 
             # Raster layers
-            elif layer.type() == QgsRasterLayer.RasterLayer:
+            elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
                 src = layer.dataProvider().dataSourceUri() if layer.dataProvider() else ''
                 if not (src and os.path.isfile(src)):
                     continue
@@ -227,7 +228,7 @@ class GeopackerLogic:
     def is_layer_empty_temp(self, layer):
         if not layer.isValid():
             return True
-        if layer.type() == QgsVectorLayer.VectorLayer:
+        if layer.type() == QgsMapLayer.LayerType.VectorLayer:
             if layer.dataProvider().name() == 'memory':
                 if layer.featureCount() <= 0:
                     return True
@@ -313,11 +314,15 @@ class GeopackerLogic:
             failed_layers = []
 
             for i, layer in enumerate(layers_to_package):
+                if self.feedback and self.feedback.isCanceled():
+                    self.update_status("Packaging canceled by user.", 0)
+                    return ["Packaging canceled by user."]
+
                 progress = 5 + int(60 * (i / len(layers_to_package)))
                 self.update_status(
                     f"Processing layer: {layer.name()}", progress)
 
-                if layer.type() == QgsVectorLayer.VectorLayer:
+                if layer.type() == QgsMapLayer.LayerType.VectorLayer:
                     provider_name = layer.dataProvider().name() if layer.dataProvider() else ""
                     if self.skip_remote and provider_name not in ('ogr', 'memory', 'delimitedtext', 'gpx', 'spatialite'):
                         self.update_status(
@@ -360,10 +365,10 @@ class GeopackerLogic:
                             gpkg_filename = f"{group_path}.gpkg"
                             target_gpkg = os.path.join(temp_dir, gpkg_filename)
 
-                    options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+                    options.actionOnExistingFile = QgsVectorFileWriter.ActionOnExistingFile.CreateOrOverwriteFile
 
                     if os.path.exists(target_gpkg):
-                        options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+                        options.actionOnExistingFile = QgsVectorFileWriter.ActionOnExistingFile.CreateOrOverwriteLayer
 
                     original_subset = layer.subsetString()
                     bypass_filter = self.retain_full_filtered and bool(
@@ -383,7 +388,7 @@ class GeopackerLogic:
                     error_msg = write_result[1] if len(
                         write_result) > 1 else str(writer_err)
 
-                    if writer_err == QgsVectorFileWriter.NoError:
+                    if writer_err == QgsVectorFileWriter.WriterError.NoError:
                         new_source = f"./{gpkg_filename}|layername={options.layerName}"
                         layer_mapping[layer.id()] = {
                             'type': 'vector',
@@ -391,7 +396,7 @@ class GeopackerLogic:
                             'provider': 'ogr'
                         }
                         success_layers_data.append({'name': layer.name(
-                        ), 'type': 'Vector', 'dest': f"{gpkg_filename} ({options.layerName})"})
+                            ), 'type': 'Vector', 'dest': f"{gpkg_filename} ({options.layerName})"})
 
                         # --- Embed Style to GeoPackage ---
                         try:
@@ -415,7 +420,7 @@ class GeopackerLogic:
                                 os.remove(temp_style_file)
                         except Exception as e:
                             QgsMessageLog.logMessage(
-                                f"Failed to save style to GeoPackage for {layer.name()}: {str(e)}", "Geopacker", Qgis.Warning)
+                                f"Failed to save style to GeoPackage for {layer.name()}: {str(e)}", "Geopacker", Qgis.MessageLevel.Warning)
                         # ---------------------------------
 
                         # Pack loose .qml style files for vectors
@@ -439,13 +444,13 @@ class GeopackerLogic:
                                         {'name': f"{layer.name()} (.qml)", 'reason': str(e)})
                     else:
                         QgsMessageLog.logMessage(
-                            f"Failed to export {layer.name()}: {error_msg}", "Geopacker", Qgis.Warning)
+                            f"Failed to export {layer.name()}: {error_msg}", "Geopacker", Qgis.MessageLevel.Warning)
                         failed_layers.append(
                             f"• {layer.name()} (Failed export: {error_msg})")
                         failed_ops_data.append(
                             {'name': layer.name(), 'reason': f"Export failed: {error_msg}"})
 
-                elif layer.type() == QgsRasterLayer.RasterLayer:
+                elif layer.type() == QgsMapLayer.LayerType.RasterLayer:
                     source_path = layer.dataProvider().dataSourceUri()
                     if os.path.isfile(source_path):
                         filename = os.path.basename(source_path)
@@ -477,7 +482,7 @@ class GeopackerLogic:
                                                     pass
                                                 except OSError as e:
                                                     QgsMessageLog.logMessage(
-                                                        f"Failed to copy raster file {src_f}: {str(e)}", "Geopacker", Qgis.Warning)
+                                                        f"Failed to copy raster file {src_f}: {str(e)}", "Geopacker", Qgis.MessageLevel.Warning)
                                 else:
                                     raise Exception("gdal.Open failed")
                             except (ImportError, OSError, RuntimeError):
@@ -496,7 +501,7 @@ class GeopackerLogic:
                                                 pass
                                             except OSError as e:
                                                 QgsMessageLog.logMessage(
-                                                    f"Failed to copy raster file {src_f}: {str(e)}", "Geopacker", Qgis.Warning)
+                                                    f"Failed to copy raster file {src_f}: {str(e)}", "Geopacker", Qgis.MessageLevel.Warning)
 
                         new_source = f"./rasters/{group_path}/{filename}" if group_path else f"./rasters/{filename}"
                         layer_mapping[layer.id()] = {
@@ -508,9 +513,13 @@ class GeopackerLogic:
                             {'name': layer.name(), 'type': 'Raster', 'dest': 'Copied Local Raster'})
                     else:
                         QgsMessageLog.logMessage(
-                            f"Skipping raster copy for {layer.name()} (not a local file)", "Geopacker", Qgis.Info)
+                            f"Skipping raster copy for {layer.name()} (not a local file)", "Geopacker", Qgis.MessageLevel.Info)
                         skipped_layers_data.append(
                             {'name': layer.name(), 'reason': 'Remote/Non-local Raster'})
+
+            if self.feedback and self.feedback.isCanceled():
+                self.update_status("Packaging canceled by user.", 0)
+                return ["Packaging canceled by user."]
 
             self.update_status("Saving project copy...", 70)
 
@@ -525,6 +534,10 @@ class GeopackerLogic:
             self.project.setFileName(original_file_name)
             if original_is_dirty:
                 self.project.setDirty(True)
+
+            if self.feedback and self.feedback.isCanceled():
+                self.update_status("Packaging canceled by user.", 0)
+                return ["Packaging canceled by user."]
 
             self.update_status("Remapping project paths...", 75)
 
@@ -548,10 +561,8 @@ class GeopackerLogic:
 
             if qgs_file:
                 # Import defusedxml lazily to avoid crash on plugin load if missing
-                import xml.etree.ElementTree as ET
+                import xml.etree.ElementTree as ET  # nosec B405
                 import defusedxml.ElementTree as defused_ET
-                import defusedxml
-                defusedxml.defuse_stdlib()
 
                 # Use defusedxml to safely parse the QGS project file
                 tree = defused_ET.parse(qgs_file)
@@ -586,7 +597,7 @@ class GeopackerLogic:
                                 media_mapping[path_str] = f"./media/{safe_name}"
                             except Exception as e:
                                 QgsMessageLog.logMessage(
-                                    f"Failed to copy media {path_str}: {str(e)}", "Geopacker", Qgis.Warning)
+                                    f"Failed to copy media {path_str}: {str(e)}", "Geopacker", Qgis.MessageLevel.Warning)
                                 return path_str
                         return media_mapping[path_str]
                     return path_str
@@ -609,7 +620,7 @@ class GeopackerLogic:
                             return f"./styles/{safe_name}"
                         except OSError as e:
                             QgsMessageLog.logMessage(
-                                f"Failed to copy style file {path_str}: {str(e)}", "Geopacker", Qgis.Warning)
+                                f"Failed to copy style file {path_str}: {str(e)}", "Geopacker", Qgis.MessageLevel.Warning)
                             return path_str
                     return path_str
 
@@ -722,11 +733,15 @@ class GeopackerLogic:
                         for file in files:
                             file_path = os.path.join(root_dir, file)
                             arcname = os.path.relpath(
-                                file_path, qgz_extract_dir)
+                                file_path, qgz_extract_dir).replace('\\', '/')
                             zf.write(file_path, arcname)
 
                 shutil.move(new_qgz_path, temp_qgz_path)
                 shutil.rmtree(qgz_extract_dir, ignore_errors=True)
+
+            if self.feedback and self.feedback.isCanceled():
+                self.update_status("Packaging canceled by user.", 0)
+                return ["Packaging canceled by user."]
 
             self.update_status("Generating PDF Audit Report...", 82)
 
@@ -849,17 +864,24 @@ class GeopackerLogic:
             try:
                 doc = QTextDocument()
                 doc.setHtml(html)
-                printer = QPrinter(QPrinter.HighResolution)
-                printer.setOutputFormat(QPrinter.PdfFormat)
+                printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+                printer.setOutputFormat(QPrinter.OutputFormat.PdfFormat)
                 printer.setOutputFileName(report_path)
-                doc.print_(printer)
+                if hasattr(doc, 'print'):
+                    doc.print(printer)
+                else:
+                    doc.print_(printer)
             except Exception as e:
                 QgsMessageLog.logMessage(
-                    f"Failed to generate PDF report: {e}", "Geopacker", Qgis.Warning)
+                    f"Failed to generate PDF report: {e}", "Geopacker", Qgis.MessageLevel.Warning)
                 # Fallback to HTML if PDF generation fails
                 report_path = os.path.join(temp_dir, "packaging_report.html")
                 with open(report_path, "w", encoding="utf-8") as rf:
                     rf.write(html)
+
+            if self.feedback and self.feedback.isCanceled():
+                self.update_status("Packaging canceled by user.", 0)
+                return ["Packaging canceled by user."]
 
             self.update_status("Zipping final package...", 85)
 
@@ -883,23 +905,38 @@ class GeopackerLogic:
 
                 for root_dir, dirs, files in os.walk(rasters_dir):
                     for file in files:
+                        if self.feedback and self.feedback.isCanceled():
+                            break
                         file_path = os.path.join(root_dir, file)
-                        rel_path = os.path.relpath(file_path, temp_dir)
+                        rel_path = os.path.relpath(file_path, temp_dir).replace('\\', '/')
                         final_zip.write(file_path, rel_path)
 
                 if os.path.exists(media_dir):
                     for root_dir, dirs, files in os.walk(media_dir):
                         for file in files:
+                            if self.feedback and self.feedback.isCanceled():
+                                break
                             file_path = os.path.join(root_dir, file)
-                            rel_path = os.path.relpath(file_path, temp_dir)
+                            rel_path = os.path.relpath(file_path, temp_dir).replace('\\', '/')
                             final_zip.write(file_path, rel_path)
 
                 if os.path.exists(styles_dir):
                     for root_dir, dirs, files in os.walk(styles_dir):
                         for file in files:
+                            if self.feedback and self.feedback.isCanceled():
+                                break
                             file_path = os.path.join(root_dir, file)
-                            rel_path = os.path.relpath(file_path, temp_dir)
+                            rel_path = os.path.relpath(file_path, temp_dir).replace('\\', '/')
                             final_zip.write(file_path, rel_path)
+
+            if self.feedback and self.feedback.isCanceled():
+                if os.path.exists(self.output_file):
+                    try:
+                        os.remove(self.output_file)
+                    except OSError:
+                        pass
+                self.update_status("Packaging canceled by user.", 0)
+                return ["Packaging canceled by user."]
 
             self.update_status("Packaging complete!", 100)
             return failed_layers

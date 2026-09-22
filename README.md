@@ -4,7 +4,7 @@
 
 # Geopacker QGIS Plugin
 
-![Version](https://img.shields.io/badge/version-1.5.2-blue)
+![Version](https://img.shields.io/badge/version-1.6-blue)
 ![License](https://img.shields.io/badge/license-GPLv2-green)
 
 **Geopacker** is a QGIS plugin designed to solve the headache of broken paths when sharing QGIS projects. It bundles your entire current project (`.qgz`), vector layers, and raster layers into a single, clean `.zip` file ready to be shared. 
@@ -87,6 +87,14 @@ Share the resulting `.zip` file with your colleagues or clients!
   - To install, open your **OSGeo4W Shell** as Administrator and run: `pip install defusedxml`.
 
 ## Changelog
+
+### 1.6
+- **Build & Packaging**: Updated `pb_tool.cfg` to include all runtime modules (`dependency_manager.py`, `geopacker_provider.py`, `geopacker_algorithm.py`) preventing missing module errors in release packages.
+- **Cross-Platform ZIP Portability**: Normalized all archive paths to forward slashes (`/`), preventing directory structure corruption when archives generated on Windows are extracted on Linux and macOS.
+- **PyQt6 / QGIS 4 Compatibility**: Fixed `AttributeError` on `QTextDocument.print_()` by adding dynamic method resolution for PyQt6 (`print`) and PyQt5 (`print_`) during PDF report generation.
+- **Thread Safety**: Hardened `dependency_manager.py` to detect background worker threads (such as Processing algorithms) and prevent non-thread-safe Qt GUI dialogs and cursor events.
+- **Processing Cancellation**: Added responsive cancellation checks across packaging loops so tasks can be halted cleanly via QGIS Processing.
+- **Namespace Cleanliness**: Removed global `defusedxml.defuse_stdlib()` monkey-patching to eliminate unintended side-effects on other QGIS plugins.
 
 ### 1.5.2
 - **Bug Fix**: Fixed an issue with XML project remapping where `defusedxml.ElementTree` was missing the `SubElement` attribute. Improved robustness of XML tree building while maintaining secure parsing.

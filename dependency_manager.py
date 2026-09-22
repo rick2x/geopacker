@@ -2,12 +2,12 @@
 import sys
 import os
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import site
 import importlib
 
 from qgis.core import QgsMessageLog, Qgis
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, QThread
 from qgis.PyQt.QtWidgets import QMessageBox, QApplication
 
 
@@ -58,7 +58,7 @@ def _install_defusedxml():
     flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
 
     # 1. Try standard pip install
-    proc = subprocess.run(
+    proc = subprocess.run(  # nosec B603
         [py_exe, "-m", "pip", "install", "defusedxml"],
         env=env,
         capture_output=True,
@@ -68,7 +68,7 @@ def _install_defusedxml():
 
     # 2. If standard install fails (e.g. permission denied in Program Files), try --user
     if proc.returncode != 0:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B603
             [py_exe, "-m", "pip", "install", "--user", "defusedxml"],
             env=env,
             capture_output=True,
@@ -82,8 +82,12 @@ def _install_defusedxml():
             user_site = site.getusersitepackages()
             if user_site and os.path.isdir(user_site) and user_site not in sys.path:
                 sys.path.insert(0, user_site)
-        except Exception:
-            pass
+        except Exception as e:
+            QgsMessageLog.logMessage(
+                f"Could not add user site-packages to sys.path: {e}",
+                "Geopacker",
+                Qgis.MessageLevel.Info
+            )
 
         importlib.invalidate_caches()
         try:
@@ -153,10 +157,7 @@ def _show_manual_instructions(parent=None, error_msg=None):
     btn_close = box.addButton(getattr(QMessageBox, "StandardButton", QMessageBox).Close)
 
     while True:
-        if hasattr(box, "exec"):
-            box.exec()
-        else:
-            box.exec_()
+        box.exec()
 
         clicked = box.clickedButton()
         if clicked == btn_copy:
@@ -193,13 +194,14 @@ def check_and_install_dependencies(parent=None, feedback=None):
 
     app = QApplication.instance()
 
-    # Headless / CLI execution check
-    is_headless = parent is None and (app is None or not hasattr(app, "activeWindow") or app.activeWindow() is None)
+    # Headless / CLI / Worker Thread execution check (prevent GUI calls on non-GUI threads)
+    is_worker_thread = app is None or QThread.currentThread() != app.thread()
+    is_headless = is_worker_thread or (parent is None and (not hasattr(app, "activeWindow") or app.activeWindow() is None))
     if is_headless:
         msg = "defusedxml is not installed. Attempting automatic installation..."
         if feedback:
             feedback.pushInfo(msg)
-        QgsMessageLog.logMessage(msg, "Geopacker", Qgis.Info)
+        QgsMessageLog.logMessage(msg, "Geopacker", Qgis.MessageLevel.Info)
 
         success, err = _install_defusedxml()
         if success:
@@ -209,7 +211,7 @@ def check_and_install_dependencies(parent=None, feedback=None):
             QgsMessageLog.logMessage(
                 success_msg,
                 "Geopacker",
-                Qgis.Success if hasattr(Qgis, "Success") else Qgis.Info
+                Qgis.MessageLevel.Success
             )
             return True
         else:
@@ -219,7 +221,7 @@ def check_and_install_dependencies(parent=None, feedback=None):
             )
             if feedback:
                 feedback.reportError(fail_msg)
-            QgsMessageLog.logMessage(fail_msg, "Geopacker", Qgis.Critical)
+            QgsMessageLog.logMessage(fail_msg, "Geopacker", Qgis.MessageLevel.Critical)
             return False
 
     # Interactive GUI prompt
@@ -239,10 +241,7 @@ def check_and_install_dependencies(parent=None, feedback=None):
     btn_cancel = prompt_box.addButton("Cancel", role_reject)
     prompt_box.setDefaultButton(btn_auto)
 
-    if hasattr(prompt_box, "exec"):
-        prompt_box.exec()
-    else:
-        prompt_box.exec_()
+    prompt_box.exec()
 
     clicked = prompt_box.clickedButton()
     if clicked == btn_manual:
@@ -273,10 +272,7 @@ def check_and_install_dependencies(parent=None, feedback=None):
             "<p>Geopacker is ready to package your project.</p>"
         )
         success_box.setStandardButtons(btn_ok)
-        if hasattr(success_box, "exec"):
-            success_box.exec()
-        else:
-            success_box.exec_()
+        success_box.exec()
         return True
     else:
         # Automatic installation failed -> show detailed manual instructions with the error details

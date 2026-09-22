@@ -47,7 +47,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
         except Exception as e:
             from qgis.core import QgsMessageLog, Qgis
             QgsMessageLog.logMessage(
-                f"Estimate failed: {e}", "Geopacker", Qgis.Warning
+                f"Estimate failed: {e}", "Geopacker", Qgis.MessageLevel.Warning
             )
             self.lblEstimatedSize.setText(
                 "Estimated Output Size: (unable to calculate)")
@@ -150,7 +150,7 @@ class GeopackerDialog(QDialog, FORM_CLASS):
                     from qgis.core import QgsMessageLog, Qgis
                     QgsMessageLog.logMessage(
                         f"Failed to clean up partial output file: {cleanup_err}",
-                        "Geopacker", Qgis.Warning
+                        "Geopacker", Qgis.MessageLevel.Warning
                     )
             from qgis.PyQt.QtWidgets import QMessageBox
             QMessageBox.critical(

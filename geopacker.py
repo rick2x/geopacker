@@ -86,10 +86,7 @@ class Geopacker:
             self.dlg.btnHelp.clicked.connect(self.show_help)
 
         self.dlg.show()
-        if hasattr(self.dlg, 'exec'):
-            result = self.dlg.exec()
-        else:
-            result = self.dlg.exec_()
+        result = self.dlg.exec()
         
         if result:
             pass

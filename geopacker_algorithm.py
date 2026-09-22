@@ -53,7 +53,7 @@ class GeopackerAlgorithm(QgsProcessingAlgorithm):
                     'Input QGIS Project (.qgz) (Optional: leave empty to use current)'),
                 optional=True,
                 extension='qgz',
-                behavior=QgsProcessingParameterFile.File
+                behavior=QgsProcessingParameterFile.Behavior.File
             )
         )
 
